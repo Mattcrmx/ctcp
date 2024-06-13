@@ -9,7 +9,6 @@
 
 int main(void) {
     int server_socket = get_socket(PORT, SOCKET_BACKLOG);
-    int clients[SIMULTANEOUS_CLIENTS];
     int *connected_clients = calloc(SIMULTANEOUS_CLIENTS, sizeof(int));
 
     if (connected_clients == NULL) {
@@ -18,10 +17,12 @@ int main(void) {
 
     while (true) {
         int client_socket;
-        if ((client_socket = wait_for_client_connect(&server_socket)) != 1) {
-            handle_client_connect(clients, client_socket, SIMULTANEOUS_CLIENTS);
+        if ((client_socket = wait_for_client_connect(&server_socket)) != -1) {
+            handle_client_connect(connected_clients, client_socket,
+                                  SIMULTANEOUS_CLIENTS);
+            echo_client(client_socket);
         }
     }
 
-    return 1;
+    return EXIT_SUCCESS;
 }

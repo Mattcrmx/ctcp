@@ -25,5 +25,5 @@ CFLAGS = -g \
 %.o: src/%.c $(DEPS)
 	$(CC) -c -o $@ $< $(CFLAGS)
 
-fd-watcher: $(OBJ)
+ctcp: $(OBJ)
 	$(CC) -o $@ $^ $(CFLAGS)

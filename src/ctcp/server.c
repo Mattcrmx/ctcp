@@ -11,6 +11,9 @@
 #include "server.h"
 #include <unistd.h>
 
+#define BUFFER_SIZE 1024
+#define EXIT_CMD "exit"
+
 int get_socket(int port, int backlog) {
     // sock stream is TCP and AF_INET is ipv4
     int socket_fd;
@@ -95,4 +98,52 @@ int handle_client_connect(int *clients, int client_socket,
         close(client_socket);
     }
     return 1;
+}
+
+int echo_client(int client_socket) {
+    char *client_msg = malloc(BUFFER_SIZE);
+
+    if (client_msg == NULL) {
+        fprintf(stderr, "Failed to allocate memory for client message.");
+    }
+
+    int close_socket = 0;
+
+    if (client_socket == 0) {
+        free(client_msg);
+        return -1;
+    }
+    int msg_length = recv(client_socket, client_msg, BUFFER_SIZE, MSG_DONTWAIT);
+
+    if (msg_length == -1 && errno != EAGAIN) {
+        fprintf(stderr, "Errno [%i] : %s\n", errno, strerror(errno));
+        close_socket = 1;
+    } else if (msg_length == 0) {
+        // client disconnect causes msg len to be 0
+        close_socket = 1;
+    } else if (msg_length > 0) {
+        client_msg[msg_length] = '\0';
+        if (strncmp(client_msg, EXIT_CMD, 4) == 0) {
+            // client disconnect
+            char msg[] = "Disconnecting socket\n";
+            send(client_socket, msg, strlen(msg), 0);
+            close_socket = 1;
+        } else {
+            // return client msg
+            char echo_msg[] = "echo";
+            char *response = malloc(strlen(client_msg) + strlen(echo_msg) + 1);
+
+            strcpy(response, echo_msg);
+            strcat(response, client_msg);
+            send(client_socket, response, strlen(response), 0);
+        }
+    }
+
+    if (close_socket == 1) {
+        close(client_socket);
+        free(client_msg);
+        return 1;
+    }
+    free(client_msg);
+    return 0;
 }
