@@ -70,7 +70,7 @@ int wait_for_client_connect(int *server_socket_fd) {
     if (client_socket != -1) {
         char ip[INET_ADDRSTRLEN];
         inet_ntop(AF_INET, &(client_socket_addr.sin_addr), ip, INET_ADDRSTRLEN);
-        fprintf(stderr, "Accepted connection on %s", ip);
+        fprintf(stderr, "Accepted connection on %s\n", ip);
 
         // non blocking socket
         setsockopt(client_socket, SOL_SOCKET, SO_KEEPALIVE, &socket_opt,
@@ -87,24 +87,25 @@ int handle_client_connect(int *clients, int client_socket,
         // check free slots
         if (clients[idx] == 0) {
             clients[idx] = client_socket;
-            send(client_socket, "Type Exit to quit\n",
-                 strlen("Type Exit to quit\n"), MSG_DONTWAIT);
+            send(client_socket, "Type exit to quit\n",
+                 strlen("Type exit to quit\n"), MSG_DONTWAIT);
             can_accept = true;
             break;
         }
     }
     if (!can_accept) {
-        fprintf(stderr, "All sockets are taken");
+        fprintf(stderr, "All sockets are taken\n");
         close(client_socket);
     }
     return 1;
 }
 
 int echo_client(int client_socket) {
-    char *client_msg = malloc(BUFFER_SIZE);
+    char *client_msg = malloc(BUFFER_SIZE + 1);
+    fprintf(stderr, "Echo-ing client's message at socket %d\n", client_socket);
 
     if (client_msg == NULL) {
-        fprintf(stderr, "Failed to allocate memory for client message.");
+        fprintf(stderr, "Failed to allocate memory for client message.\n");
     }
 
     int close_socket = 0;
@@ -113,7 +114,8 @@ int echo_client(int client_socket) {
         free(client_msg);
         return -1;
     }
-    int msg_length = recv(client_socket, client_msg, BUFFER_SIZE, MSG_DONTWAIT);
+    int msg_length = recv(client_socket, client_msg, BUFFER_SIZE, 0);
+    fprintf(stderr, "Received message %s", client_msg);
 
     if (msg_length == -1 && errno != EAGAIN) {
         fprintf(stderr, "Errno [%i] : %s\n", errno, strerror(errno));
@@ -130,7 +132,7 @@ int echo_client(int client_socket) {
             close_socket = 1;
         } else {
             // return client msg
-            char echo_msg[] = "echo";
+            char echo_msg[] = "echo: ";
             char *response = malloc(strlen(client_msg) + strlen(echo_msg) + 1);
 
             strcpy(response, echo_msg);

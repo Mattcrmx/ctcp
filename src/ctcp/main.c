@@ -15,6 +15,8 @@ int main(void) {
         fprintf(stderr, "Failed to allocate connected clients array.");
     }
 
+    fprintf(stderr, "Running server on port %d. Waiting for connections.\n",
+            PORT);
     while (true) {
         int client_socket;
         if ((client_socket = wait_for_client_connect(&server_socket)) != -1) {
